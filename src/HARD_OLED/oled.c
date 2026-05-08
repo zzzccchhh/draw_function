@@ -1,5 +1,6 @@
 #include "oled.h"
 #include "oledfont.h"
+#include <string.h>
 
 #define OLED_SCL_GPIO_PORT    GPIOA
 #define OLED_SCL_GPIO_PIN     GPIO_Pin_5
@@ -18,6 +19,7 @@
 
 
 uint8_t OLED_GRAM[128][8];
+uint8_t text_mask[128][64];
 
 // SPI1��ʼ������
 void SPI1_Init(void)
@@ -154,6 +156,7 @@ void OLED_Clear(void)
             OLED_GRAM[n][i] = 0;
         }
     }
+    memset(text_mask, 0, sizeof(text_mask));
     OLED_Refresh();
 }
 
@@ -213,10 +216,12 @@ void OLED_ShowChar(uint8_t x, uint8_t y, uint8_t chr, uint8_t size1)
 
         for(m = 0; m < 8; m++)
         {
-            if(temp & 0x80)
+            if(temp & 0x80) {
                 OLED_DrawPoint(x, y);
-            else
+                text_mask[x][y] = 1;  // 标记文本像素
+            } else {
                 OLED_ClearPoint(x, y);
+            }
             temp <<= 1;
             y++;
             if((y - y0) == size1)
@@ -227,7 +232,6 @@ void OLED_ShowChar(uint8_t x, uint8_t y, uint8_t chr, uint8_t size1)
             }
         }
     }
-    OLED_Refresh();
 }
 
 // ��ʾ�ַ���
@@ -244,7 +248,6 @@ void OLED_ShowString(uint8_t x, uint8_t y, uint8_t *chr, uint8_t size1)
         }
         chr++;
     }
-    OLED_Refresh();
 }
 
 // ������

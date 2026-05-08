@@ -43,6 +43,9 @@
 // OLED �Դ滺����
 extern uint8_t OLED_GRAM[128][8];
 
+// 文本像素掩码 - 标记文字绘制区域，曲线经过时清除文字
+extern uint8_t text_mask[128][64];
+
 // �ֿ�����
 extern const unsigned char ikun[];
 

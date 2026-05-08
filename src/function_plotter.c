@@ -51,8 +51,13 @@ static void draw_line(int8_t x0, int8_t y0, int8_t x1, int8_t y1)
     int8_t err = dx - dy;
 
     while(1) {
-        if(x0 >= 0 && x0 < 128 && y0 >= 0 && y0 < 64)
+        if(x0 >= 0 && x0 < 128 && y0 >= 0 && y0 < 64) {
+            // 如果是文本像素，先清除文字再绘制曲线
+            if(text_mask[x0][y0]) {
+                OLED_ClearPoint((uint8_t)x0, (uint8_t)y0);
+            }
             OLED_DrawPoint((uint8_t)x0, (uint8_t)y0);
+        }
         if(x0 == x1 && y0 == y1) break;
         int8_t e2 = err * 2;
         if(e2 > -dy) { err -= dy; x0 += sx; }
@@ -64,9 +69,10 @@ void function_plot(const function_preset_t *preset)
 {
     OLED_Clear();
 
-    // 绘制坐标轴（中心）
-    // x轴: y=32, 从x=0到127
-    // y轴: x=64, 从y=0到63
+    // 1. 先绘制文本（建立文本像素掩码）
+    OLED_ShowString(0, 0, (uint8_t*)preset->name, 12);
+
+    // 2. 绘制坐标轴
     for(uint8_t x = 0; x < 128; x++) {
         OLED_DrawPoint(x, 32);
     }
@@ -74,6 +80,7 @@ void function_plot(const function_preset_t *preset)
         OLED_DrawPoint(64, y);
     }
 
+    // 3. 绘制函数曲线（曲线会覆盖文本像素）
     int8_t prev_py = -1;
 
     for(uint8_t px = 0; px < 128; px++) {
@@ -104,7 +111,6 @@ void function_plot(const function_preset_t *preset)
         prev_py = screen_y;
     }
 
-    OLED_ShowString(0, 0, (uint8_t*)preset->name, 8);
     OLED_Refresh();
 }
 
