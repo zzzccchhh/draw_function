@@ -7,7 +7,10 @@ typedef enum {
     FUNC_QUADRATIC,   // y = ax² + bx + c
     FUNC_CUBIC,       // y = ax³ + bx² + cx + d
     FUNC_EXPONENTIAL, // y = a * e^(bx)
-    FUNC_LOGARITHM    // y = a * ln(bx + c)
+    FUNC_LOGARITHM,   // y = a * ln(bx + c)
+    FUNC_SINE,        // y = a * sin(bx + c) + d
+    FUNC_COSINE,      // y = a * cos(bx + c) + d
+    FUNC_TANGENT       // y = a * tan(bx + c) + d
 } function_type_t;
 
 typedef struct {

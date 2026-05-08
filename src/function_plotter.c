@@ -13,6 +13,9 @@ const function_preset_t presets[] = {
     {FUNC_EXPONENTIAL, "y=2^(x/12)-20",     {1.0f, 0.0578f, -20.0f, 0.0f}},
     {FUNC_LOGARITHM,   "y=12*ln(x+65)-32",  {12.0f, 1.0f, 65.0f, -32.0f}},
     {FUNC_LOGARITHM,   "y=8*ln(x+65)-16",   {8.0f,  1.0f, 65.0f, -16.0f}},
+    {FUNC_SINE,        "y=32*sin(x*pi/32)",   {32.0f, 0.0982f, 0.0f, 0.0f}},
+    {FUNC_COSINE,      "y=32*cos(x*pi/32)",   {32.0f, 0.0982f, 0.0f, 0.0f}},
+    {FUNC_TANGENT,     "y=tan(x*pi/64)",     {1.0f, 0.0491f, 0.0f, 0.0f}},
 };
 
 uint8_t current_index = 0;
@@ -29,6 +32,12 @@ static float eval_function(float x, const function_preset_t *p)
             return p->coef[0] * expf(p->coef[1] * x) + p->coef[2];
         case FUNC_LOGARITHM:
             return p->coef[0] * logf(p->coef[1] * x + p->coef[2]) + p->coef[3];
+        case FUNC_SINE:
+            return p->coef[0] * sinf(p->coef[1] * x + p->coef[2]) + p->coef[3];
+        case FUNC_COSINE:
+            return p->coef[0] * cosf(p->coef[1] * x + p->coef[2]) + p->coef[3];
+        case FUNC_TANGENT:
+            return p->coef[0] * tanf(p->coef[1] * x + p->coef[2]) + p->coef[3];
     }
     return 0;
 }
@@ -134,6 +143,9 @@ void function_send_to_uart(const function_preset_t *preset)
         case FUNC_CUBIC:       type_str = "Cubic"; break;
         case FUNC_EXPONENTIAL: type_str = "Exponential"; break;
         case FUNC_LOGARITHM:   type_str = "Logarithm"; break;
+        case FUNC_SINE:        type_str = "Sine"; break;
+        case FUNC_COSINE:      type_str = "Cosine"; break;
+        case FUNC_TANGENT:     type_str = "Tangent"; break;
         default:               type_str = "Unknown"; break;
     }
 
