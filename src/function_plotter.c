@@ -99,9 +99,36 @@ void function_plot(const function_preset_t *preset)
     OLED_Refresh();
 }
 
+static void float_to_str(char *buf, float val)
+{
+    int32_t int_part, frac_part;
+    int sign = 0;
+
+    if(val < 0) {
+        sign = 1;
+        val = -val;
+    }
+
+    int_part = (int32_t)val;
+    frac_part = (int32_t)((val - int_part) * 1000);
+
+    if(sign) *buf++ = '-';
+    if(int_part >= 10) {
+        *buf++ = '0' + (int_part / 10);
+    }
+    *buf++ = '0' + (int_part % 10);
+    *buf++ = '.';
+    *buf++ = '0' + (frac_part / 100);
+    *buf++ = '0' + ((frac_part / 10) % 10);
+    *buf++ = '0' + (frac_part % 10);
+    *buf = '\0';
+}
+
 void function_send_to_uart(const function_preset_t *preset)
 {
     const char *type_str;
+    char buf[16];
+
     switch(preset->type) {
         case FUNC_QUADRATIC:   type_str = "Quadratic"; break;
         case FUNC_CUBIC:       type_str = "Cubic"; break;
@@ -114,7 +141,15 @@ void function_send_to_uart(const function_preset_t *preset)
     USART1_Printf("Current: %s\r\n", preset->name);
     USART1_Printf("Type: %s\r\n", type_str);
     USART1_Printf("Coefficients:\r\n");
-    USART1_Printf("  a=%.3f, b=%.3f\r\n", preset->coef[0], preset->coef[1]);
-    USART1_Printf("  c=%.3f, d=%.3f\r\n", preset->coef[2], preset->coef[3]);
+
+    float_to_str(buf, preset->coef[0]);
+    USART1_Printf("  a=%s", buf);
+    float_to_str(buf, preset->coef[1]);
+    USART1_Printf(", b=%s\r\n", buf);
+    float_to_str(buf, preset->coef[2]);
+    USART1_Printf("  c=%s", buf);
+    float_to_str(buf, preset->coef[3]);
+    USART1_Printf(", d=%s\r\n", buf);
+
     USART1_Printf("===========================\r\n");
 }
