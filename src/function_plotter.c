@@ -9,8 +9,8 @@ const function_preset_t presets[] = {
     {FUNC_QUADRATIC,   "y=x^2/30-16",       {0.033f, 0.0f, -16.0f,  0.0f}},
     {FUNC_CUBIC,       "y=x^3/2000",        {0.0005f, 0.0f,   0.0f,  0.0f}},
     {FUNC_CUBIC,       "y=x^3/8000-16",     {0.000125f, 0.0f, -16.0f, 0.0f}},
-    {FUNC_EXPONENTIAL, "y=e^(x/15)-2",     {1.0f, 1.0f/15.0f, -2.0f, 0.0f}},
-    {FUNC_EXPONENTIAL, "y=2^(x/12)-2",     {1.0f, 0.0578f, -2.0f, 0.0f}},
+    {FUNC_EXPONENTIAL, "y=e^(x/15)-20",     {1.0f, 1.0f/15.0f, -20.0f, 0.0f}},
+    {FUNC_EXPONENTIAL, "y=2^(x/12)-20",     {1.0f, 0.0578f, -20.0f, 0.0f}},
     {FUNC_LOGARITHM,   "y=12*ln(x+65)-32",  {12.0f, 1.0f, 65.0f, -32.0f}},
     {FUNC_LOGARITHM,   "y=8*ln(x+65)-16",   {8.0f,  1.0f, 65.0f, -16.0f}},
 };
