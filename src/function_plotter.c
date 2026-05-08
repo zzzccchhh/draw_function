@@ -4,15 +4,15 @@
 #include <math.h>
 
 const function_preset_t presets[] = {
-    {FUNC_QUADRATIC,   "y=x^2",             {0.008f, 0.0f,  0.0f,  0.0f}},
-    {FUNC_QUADRATIC,   "y=-x^2+32",        {-0.002f,0.0f,  32.0f, 0.0f}},
-    {FUNC_QUADRATIC,   "y=0.1x^2-5",       {0.1f,   0.0f, -5.0f,  0.0f}},
-    {FUNC_CUBIC,       "y=x^3/2000",       {0.0005f, 0.0f,  0.0f,  0.0f}},
-    {FUNC_CUBIC,       "y=x^3-x",          {0.002f, -1.0f,  0.0f,  0.0f}},
-    {FUNC_EXPONENTIAL, "y=e^x/80",         {1.0f/80.0f, 1.0f, 0.0f, 0.0f}},
-    {FUNC_EXPONENTIAL, "y=2^x/100",        {1.0f/100.0f, 0.693f, 0.0f, 0.0f}},
-    {FUNC_LOGARITHM,   "y=10*ln(x+1)",     {10.0f, 1.0f,  0.0f,  0.0f}},
-    {FUNC_LOGARITHM,   "y=8*ln(x/5+1)",    {8.0f,  0.2f,  0.0f,  0.0f}},
+    {FUNC_QUADRATIC,   "y=x^2/50",          {0.02f,  0.0f,   0.0f,  0.0f}},
+    {FUNC_QUADRATIC,   "y=-x^2/50+32",      {-0.02f, 0.0f,  32.0f,  0.0f}},
+    {FUNC_QUADRATIC,   "y=x^2/30-16",       {0.033f, 0.0f, -16.0f,  0.0f}},
+    {FUNC_CUBIC,       "y=x^3/2000",        {0.0005f, 0.0f,   0.0f,  0.0f}},
+    {FUNC_CUBIC,       "y=x^3/8000-16",     {0.000125f, 0.0f, -16.0f, 0.0f}},
+    {FUNC_EXPONENTIAL, "y=e^(x/15)-2",     {1.0f, 1.0f/15.0f, -2.0f, 0.0f}},
+    {FUNC_EXPONENTIAL, "y=2^(x/12)-2",     {1.0f, 0.0578f, -2.0f, 0.0f}},
+    {FUNC_LOGARITHM,   "y=12*ln(x+65)-32",  {12.0f, 1.0f, 65.0f, -32.0f}},
+    {FUNC_LOGARITHM,   "y=8*ln(x+65)-16",   {8.0f,  1.0f, 65.0f, -16.0f}},
 };
 
 uint8_t current_index = 0;
@@ -26,9 +26,9 @@ static float eval_function(float x, const function_preset_t *p)
         case FUNC_CUBIC:
             return p->coef[0]*x*x*x + p->coef[1]*x*x + p->coef[2]*x + p->coef[3];
         case FUNC_EXPONENTIAL:
-            return p->coef[0] * expf(p->coef[1] * x);
+            return p->coef[0] * expf(p->coef[1] * x) + p->coef[2];
         case FUNC_LOGARITHM:
-            return p->coef[0] * logf(p->coef[1] * x + 1e-6f);
+            return p->coef[0] * logf(p->coef[1] * x + p->coef[2]) + p->coef[3];
     }
     return 0;
 }
@@ -55,21 +55,44 @@ void function_plot(const function_preset_t *preset)
 {
     OLED_Clear();
 
+    // 绘制坐标轴（中心）
+    // x轴: y=32, 从x=0到127
+    // y轴: x=64, 从y=0到63
+    for(uint8_t x = 0; x < 128; x++) {
+        OLED_DrawPoint(x, 32);
+    }
+    for(uint8_t y = 0; y < 64; y++) {
+        OLED_DrawPoint(64, y);
+    }
+
     int8_t prev_py = -1;
 
     for(uint8_t px = 0; px < 128; px++) {
-        float x = (float)px;
-        float y = eval_function(x, preset);
+        float math_x = (int8_t)(px - 64);
 
-        if(y < 0) y = 0;
-        if(y > 63) y = 63;
+        float y0 = eval_function(math_x - 0.25f, preset);
+        float y1 = eval_function(math_x, preset);
+        float y2 = eval_function(math_x + 0.25f, preset);
 
-        uint8_t py = (uint8_t)(63 - y);
+        float y = (y0 + y1 + y2) / 3.0f;
+
+        int16_t screen_y = 32 - (int16_t)(y);
+
+        // 如果超出屏幕范围，跳过该点（不绘制也不连线）
+        if(screen_y < 0 || screen_y > 63) {
+            prev_py = -1;
+            continue;
+        }
 
         if(prev_py != -1) {
-            draw_line((int8_t)(px - 1), (int8_t)prev_py, (int8_t)px, (int8_t)py);
+            int8_t dy = screen_y - prev_py;
+            if(dy < -32 || dy > 32) {
+                prev_py = -1;
+            } else {
+                draw_line((int8_t)(px - 1), prev_py, (int8_t)px, screen_y);
+            }
         }
-        prev_py = (int8_t)py;
+        prev_py = screen_y;
     }
 
     OLED_ShowString(0, 0, (uint8_t*)preset->name, 8);
