@@ -6,20 +6,20 @@
 #include <stdlib.h>
 
 // OLED ���Ŷ���
-#define OLED_SCL_GPIO_PORT    GPIOA
-#define OLED_SCL_GPIO_PIN     GPIO_Pin_5
+#define OLED_SCL_GPIO_PORT    GPIOE
+#define OLED_SCL_GPIO_PIN     GPIO_Pin_11
 
-#define OLED_SDA_GPIO_PORT    GPIOA
-#define OLED_SDA_GPIO_PIN     GPIO_Pin_7
+#define OLED_SDA_GPIO_PORT    GPIOE
+#define OLED_SDA_GPIO_PIN     GPIO_Pin_13
 
 #define OLED_RST_GPIO_PORT    GPIOE
-#define OLED_RST_GPIO_PIN     GPIO_Pin_3
+#define OLED_RST_GPIO_PIN     GPIO_Pin_15
 
-#define OLED_DC_GPIO_PORT     GPIOE
-#define OLED_DC_GPIO_PIN      GPIO_Pin_2
+#define OLED_DC_GPIO_PORT     GPIOD
+#define OLED_DC_GPIO_PIN      GPIO_Pin_9
 
-#define OLED_CS_GPIO_PORT     GPIOE
-#define OLED_CS_GPIO_PIN      GPIO_Pin_1
+#define OLED_CS_GPIO_PORT     GPIOD
+#define OLED_CS_GPIO_PIN      GPIO_Pin_11
 
 // GPIO ���ƺ�
 #define OLED_SCL_Clr()  GPIO_ResetBits(OLED_SCL_GPIO_PORT, OLED_SCL_GPIO_PIN)

@@ -2,92 +2,71 @@
 #include "oledfont.h"
 #include <string.h>
 
-#define OLED_SCL_GPIO_PORT    GPIOA
-#define OLED_SCL_GPIO_PIN     GPIO_Pin_5
+#define OLED_SCL_GPIO_PORT    GPIOE
+#define OLED_SCL_GPIO_PIN     GPIO_Pin_11
 
-#define OLED_SDA_GPIO_PORT    GPIOA
-#define OLED_SDA_GPIO_PIN     GPIO_Pin_7
+#define OLED_SDA_GPIO_PORT    GPIOE
+#define OLED_SDA_GPIO_PIN     GPIO_Pin_13
 
 #define OLED_RST_GPIO_PORT    GPIOE
-#define OLED_RST_GPIO_PIN     GPIO_Pin_3
+#define OLED_RST_GPIO_PIN     GPIO_Pin_15
 
-#define OLED_DC_GPIO_PORT     GPIOE
-#define OLED_DC_GPIO_PIN      GPIO_Pin_2
+#define OLED_DC_GPIO_PORT     GPIOD
+#define OLED_DC_GPIO_PIN      GPIO_Pin_9
 
-#define OLED_CS_GPIO_PORT     GPIOE
-#define OLED_CS_GPIO_PIN      GPIO_Pin_1
+#define OLED_CS_GPIO_PORT     GPIOD
+#define OLED_CS_GPIO_PIN      GPIO_Pin_11
 
 
 uint8_t OLED_GRAM[128][8];
 uint8_t text_mask[128][64];
 
-// SPI1��ʼ������
+// 软件SPI初始化
 void SPI1_Init(void)
 {
     GPIO_InitTypeDef GPIO_InitStruct;
-    SPI_InitTypeDef SPI_InitStruct;
-    
-    // ����ʱ��
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOE | RCC_APB2Periph_SPI1, ENABLE);
-    
-    // ����SPI1����
-    // PA5: SCK, PA7: MOSI, PB7: CS, PB6: DC, PB5: RST
-    GPIO_InitStruct.GPIO_Pin = OLED_SCL_GPIO_PIN | OLED_SDA_GPIO_PIN;  // SCK��MOSI
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;  // �����������
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOA, &GPIO_InitStruct);
-    
-    // ����CS��DC��RST����Ϊ��ͨ�������
-    GPIO_InitStruct.GPIO_Pin = OLED_CS_GPIO_PIN | OLED_DC_GPIO_PIN | OLED_RST_GPIO_PIN;
+
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE | RCC_APB2Periph_GPIOD, ENABLE);
+
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+
+    GPIO_InitStruct.GPIO_Pin = OLED_SCL_GPIO_PIN | OLED_SDA_GPIO_PIN;
     GPIO_Init(GPIOE, &GPIO_InitStruct);
-    
-    // ����SPI1����
-    SPI_InitStruct.SPI_Direction = SPI_Direction_1Line_Tx;  // ������
-    SPI_InitStruct.SPI_Mode = SPI_Mode_Master;  // ����ģʽ
-    SPI_InitStruct.SPI_DataSize = SPI_DataSize_8b;  // 8λ����
-    SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;  // ʱ�ӿ��е͵�ƽ
-    SPI_InitStruct.SPI_CPHA = SPI_CPHA_1Edge;  // ��һ�����ز���
-    SPI_InitStruct.SPI_NSS = SPI_NSS_Soft;  // ��������NSS
-    SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_8;  // ������Ԥ��Ƶ
-    SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;  // ��λ�ȴ�
-    SPI_InitStruct.SPI_CRCPolynomial = 7;
-    
-    SPI_Init(SPI1, &SPI_InitStruct);
-    
-    // ʹ��SPI1
-    SPI_Cmd(SPI1, ENABLE);
+
+    GPIO_InitStruct.GPIO_Pin = OLED_RST_GPIO_PIN;
+    GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+    GPIO_InitStruct.GPIO_Pin = OLED_DC_GPIO_PIN | OLED_CS_GPIO_PIN;
+    GPIO_Init(GPIOD, &GPIO_InitStruct);
 }
 
-// д����/���� - Ӳ��SPIʵ��
+// 软件SPI发送一个字节
 void OLED_WR_Byte(uint8_t dat, uint8_t cmd)
 {
-    // ����DC���ţ�����/����ѡ��
     if(cmd == OLED_CMD)
         OLED_DC_Clr();
     else
         OLED_DC_Set();
-    
-    // Ƭѡʹ��
+
     OLED_CS_Clr();
-    
-    // �ȴ�SPI���ͻ�������
-    while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
-    
-    // ��������
-    SPI_I2S_SendData(SPI1, dat);
-    
-    // �ȴ����ݷ������
-    while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET);
-    
-    // Ƭѡ����
+
+    for(uint8_t i = 0; i < 8; i++)
+    {
+        if(dat & 0x80)
+            OLED_SDA_Set();
+        else
+            OLED_SDA_Clr();
+
+        OLED_SCL_Set();
+        dat <<= 1;
+        OLED_SCL_Clr();
+    }
+
     OLED_CS_Set();
-    
-    // �ָ�DC����
-    OLED_DC_Set();
 }
 
-// ��ɫ��ʾ
+// 颜色反转
 void OLED_ColorTurn(uint8_t i)
 {
     if(i == 0)
@@ -100,7 +79,7 @@ void OLED_ColorTurn(uint8_t i)
     }
 }
 
-// ��Ļ��ת
+// 屏幕旋转
 void OLED_DisplayTurn(uint8_t i)
 {
     if(i == 0)
@@ -115,7 +94,7 @@ void OLED_DisplayTurn(uint8_t i)
     }
 }
 
-// ������ʾ
+// 开启显示
 void OLED_DisPlay_On(void)
 {
     OLED_WR_Byte(0x8D, OLED_CMD);
@@ -123,7 +102,7 @@ void OLED_DisPlay_On(void)
     OLED_WR_Byte(0xAF, OLED_CMD);
 }
 
-// �ر���ʾ
+// 关闭显示
 void OLED_DisPlay_Off(void)
 {
     OLED_WR_Byte(0x8D, OLED_CMD);
@@ -131,7 +110,7 @@ void OLED_DisPlay_Off(void)
     OLED_WR_Byte(0xAE, OLED_CMD);
 }
 
-// ˢ���Դ浽��Ļ
+// 刷新显存到屏幕
 void OLED_Refresh(void)
 {
     uint8_t i, n;
@@ -145,7 +124,7 @@ void OLED_Refresh(void)
     }
 }
 
-// ����
+// 清屏
 void OLED_Clear(void)
 {
     uint8_t i, n;
@@ -160,7 +139,7 @@ void OLED_Clear(void)
     OLED_Refresh();
 }
 
-// ����
+// 画点
 void OLED_DrawPoint(uint8_t x, uint8_t y)
 {
     uint8_t i, m, n;
@@ -170,7 +149,7 @@ void OLED_DrawPoint(uint8_t x, uint8_t y)
     OLED_GRAM[x][i] |= n;
 }
 
-// �����
+// 清除点
 void OLED_ClearPoint(uint8_t x, uint8_t y)
 {
     uint8_t i, m, n;
@@ -180,7 +159,7 @@ void OLED_ClearPoint(uint8_t x, uint8_t y)
     OLED_GRAM[x][i] &= ~n;
 }
 
-// ����
+// 画线
 void OLED_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 {
     int8_t dx = (int8_t)(x1 > x0 ? x1 - x0 : x0 - x1);
@@ -200,7 +179,7 @@ void OLED_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
     }
 }
 
-// ��ʾ�ַ�
+// 显示字符
 void OLED_ShowChar(uint8_t x, uint8_t y, uint8_t chr, uint8_t size1)
 {
     uint8_t i, m, temp, size2, chr1;
@@ -218,7 +197,7 @@ void OLED_ShowChar(uint8_t x, uint8_t y, uint8_t chr, uint8_t size1)
         {
             if(temp & 0x80) {
                 OLED_DrawPoint(x, y);
-                text_mask[x][y] = 1;  // 标记文本像素
+                text_mask[x][y] = 1;
             } else {
                 OLED_ClearPoint(x, y);
             }
@@ -234,7 +213,7 @@ void OLED_ShowChar(uint8_t x, uint8_t y, uint8_t chr, uint8_t size1)
     }
 }
 
-// ��ʾ�ַ���
+// 显示字符串
 void OLED_ShowString(uint8_t x, uint8_t y, uint8_t *chr, uint8_t size1)
 {
     while((*chr >= ' ') && (*chr <= '~'))
@@ -250,7 +229,7 @@ void OLED_ShowString(uint8_t x, uint8_t y, uint8_t *chr, uint8_t size1)
     }
 }
 
-// ������
+// 幂函数
 uint32_t OLED_Pow(uint8_t m, uint8_t n)
 {
     uint32_t result = 1;
@@ -261,7 +240,7 @@ uint32_t OLED_Pow(uint8_t m, uint8_t n)
     return result;
 }
 
-// ��ʾ����
+// 显示数字
 void OLED_ShowNum(uint8_t x,uint8_t y,uint32_t num,uint8_t len,uint8_t size1)
 {
     uint8_t t, temp;
@@ -273,7 +252,7 @@ void OLED_ShowNum(uint8_t x,uint8_t y,uint32_t num,uint8_t len,uint8_t size1)
     OLED_Refresh();
 }
 
-// ��ʾ16*16����
+// 显示16*16汉字
 void OLED_ShowChinese(uint8_t x, uint8_t y, uint8_t no, uint8_t size1)
 {
     uint8_t i,j;
@@ -296,19 +275,16 @@ void OLED_ShowChinese(uint8_t x, uint8_t y, uint8_t no, uint8_t size1)
     OLED_Refresh();
 }
 
-// OLED��ʼ�� - Ӳ��SPI�汾
+// OLED初始化
 void OLED_Init(void)
 {
-    // ��ʼ��SPI1
     SPI1_Init();
-    
-    // ��λʱ��
+
     OLED_RST_Clr();
     system_delay_ms(200);
     OLED_RST_Set();
     system_delay_ms(200);
 
-    // OLED ��ʼ��ָ��
     OLED_WR_Byte(0xAE, OLED_CMD);
     OLED_WR_Byte(0xD5, OLED_CMD);
     OLED_WR_Byte(0x50, OLED_CMD);
@@ -338,7 +314,7 @@ void OLED_Init(void)
     OLED_Clear();
 }
 
-// ��ʾͼƬ
+// 显示图片
 void OLED_ShowPicture(uint8_t x, uint8_t y, uint8_t width, uint8_t height, const uint8_t *pic)
 {
     uint8_t i, j;

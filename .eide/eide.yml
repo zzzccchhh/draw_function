@@ -10,8 +10,8 @@ srcDirs:
   - zf_components
   - zf_device
   - zf_driver
-  - src/HARD_OLED
   - src/uart1
+  - src/SOFT_OLED
 virtualFolder:
   name: <virtual_root>
   files:
@@ -35,7 +35,7 @@ targets:
         - sdk/Ld
         - sdk/Peripheral
         - sdk/Startup
-        - src/HARD_OLED
+        - src/SOFT_OLED
         - src/uart1
       libList: []
     excludeList:
