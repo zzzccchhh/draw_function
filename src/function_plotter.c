@@ -1,5 +1,6 @@
 #include "function_plotter.h"
-#include "oled.h"
+#include "oled_ssd1306.h"
+#include "oled_hal.h"
 #include "uart1.h"
 #include <math.h>
 
@@ -52,11 +53,10 @@ static void draw_line(int8_t x0, int8_t y0, int8_t x1, int8_t y1)
 
     while(1) {
         if(x0 >= 0 && x0 < 128 && y0 >= 0 && y0 < 64) {
-            // 如果是文本像素，先清除文字再绘制曲线
-            if(text_mask[x0][y0]) {
-                OLED_ClearPoint((uint8_t)x0, (uint8_t)y0);
+            // 文本保护区域：y < 8 不绘制曲线
+            if(y0 >= 8) {
+                ssd1306_drawPixel(x0, y0, WHITE);
             }
-            OLED_DrawPoint((uint8_t)x0, (uint8_t)y0);
         }
         if(x0 == x1 && y0 == y1) break;
         int8_t e2 = err * 2;
@@ -67,20 +67,21 @@ static void draw_line(int8_t x0, int8_t y0, int8_t x1, int8_t y1)
 
 void function_plot(const function_preset_t *preset)
 {
-    OLED_Clear();
+    ssd1306_clearScreen();
 
-    // 1. 先绘制文本（建立文本像素掩码）
-    OLED_ShowString(0, 0, (uint8_t*)preset->name, 12);
+    // 1. 先绘制文本
+    oled_setTextSize(1);
+    oled_drawText(0, 0, preset->name);
 
     // 2. 绘制坐标轴
     for(uint8_t x = 0; x < 128; x++) {
-        OLED_DrawPoint(x, 32);
+        ssd1306_drawPixel(x, 32, WHITE);
     }
-    for(uint8_t y = 0; y < 64; y++) {
-        OLED_DrawPoint(64, y);
+    for(uint8_t y = 8; y < 64; y++) {
+        ssd1306_drawPixel(64, y, WHITE);
     }
 
-    // 3. 绘制函数曲线（曲线会覆盖文本像素）
+    // 3. 绘制函数曲线
     int8_t prev_py = -1;
 
     for(uint8_t px = 0; px < 128; px++) {
@@ -93,6 +94,12 @@ void function_plot(const function_preset_t *preset)
         float y = (y0 + y1 + y2) / 3.0f;
 
         int16_t screen_y = 32 - (int16_t)(y);
+
+        // 顶部文本保护区域：y < 8 不绘制曲线
+        if(screen_y < 8) {
+            prev_py = -1;
+            continue;
+        }
 
         // 如果超出屏幕范围，跳过该点（不绘制也不连线）
         if(screen_y < 0 || screen_y > 63) {
@@ -111,7 +118,7 @@ void function_plot(const function_preset_t *preset)
         prev_py = screen_y;
     }
 
-    OLED_Refresh();
+    ssd1306_updateScreen();
 }
 
 static void float_to_str(char *buf, float val)

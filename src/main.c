@@ -6,7 +6,8 @@
  */
 
 #include "zf_common_headfile.h"
-#include "oled.h"
+#include "oled_ssd1306.h"
+#include "oled_hal.h"
 #include "uart1.h"
 #include "button.h"
 #include "function_plotter.h"
@@ -20,10 +21,11 @@ int main(void)
 
     debug_init();
 
-    OLED_Init();
-    OLED_Clear();
-    OLED_ShowString(0, 0, (uint8_t*)"Test", 16);
-    OLED_Refresh();
+    ssd1306_Init(SSD1306_SWITCHCAPVCC);
+    ssd1306_clearScreen();
+    oled_setTextSize(2);
+    oled_drawText(0, 0, "Test");
+    ssd1306_updateScreen();
 
     button_init();
     function_plot(&presets[0]);

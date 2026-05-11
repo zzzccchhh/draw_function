@@ -11,7 +11,7 @@ srcDirs:
   - zf_device
   - zf_driver
   - src/uart1
-  - src/SOFT_OLED
+  - src/oled_ssd1306
 virtualFolder:
   name: <virtual_root>
   files:
@@ -35,8 +35,8 @@ targets:
         - sdk/Ld
         - sdk/Peripheral
         - sdk/Startup
-        - src/SOFT_OLED
         - src/uart1
+        - src/oled_ssd1306
       libList: []
     excludeList:
       - Startup/startup_ch32v30x_D8.S
