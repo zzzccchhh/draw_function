@@ -94,6 +94,15 @@ void coef_input_reset(void)
     }
 }
 
+void coef_input_resume(void)
+{
+    coef_ctx.current_coef_index = 0;
+    coef_ctx.cursor_pos = 0;
+    coef_ctx.sign = 1;
+    coef_ctx.has_decimal = 0;
+    // 不清空 input_buffer，保留上次的输入值
+}
+
 void coef_input_set_coef(uint8_t index, float value)
 {
     if(index < 4) {

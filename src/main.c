@@ -103,7 +103,7 @@ void button_callback(button_event_t event)
             app_state_cycle_function();
             display_function_select();
         } else if(state == STATE_DISPLAY) {
-            coef_input_reset();
+            coef_input_resume();
             app_state_set_next(STATE_INPUT_COEFFICIENTS);
             last_input_time = 0;
             update_display();

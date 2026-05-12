@@ -240,13 +240,13 @@ static void draw_coefficients(function_type_t type, const float *coef, uint8_t d
             x_pos += 6;
 
             float val = coef[i];
-            int32_t int_part = (int32_t)val;
-            int32_t frac_part = (int32_t)((val < 0 ? -val : val - int_part) * 100);
+            float abs_val = (val < 0) ? -val : val;
+            int32_t int_part = (int32_t)abs_val;
+            int32_t frac_part = (int32_t)((abs_val - int_part) * 100);
 
             if(val < 0) {
                 oled_drawChar(x_pos, 56, '-', WHITE, BLACK, 1);
                 x_pos += 6;
-                int_part = -int_part;
             }
 
             if(int_part >= 10) {
@@ -277,13 +277,13 @@ static void draw_coefficients(function_type_t type, const float *coef, uint8_t d
                 x_pos += 6;
 
                 float val = coef[i];
-                int32_t int_part = (int32_t)val;
-                int32_t frac_part = (int32_t)((val < 0 ? -val : val - int_part) * 100);
+                float abs_val = (val < 0) ? -val : val;
+                int32_t int_part = (int32_t)abs_val;
+                int32_t frac_part = (int32_t)((abs_val - int_part) * 100);
 
                 if(val < 0) {
                     oled_drawChar(x_pos, 56, '-', WHITE, BLACK, 1);
                     x_pos += 6;
-                    int_part = -int_part;
                 }
 
                 if(int_part >= 10) {

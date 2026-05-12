@@ -31,6 +31,7 @@ uint8_t app_state_get_coef_count(function_type_t type);
 void app_state_cycle_function(void);
 void app_state_set_function(function_type_t type);
 void coef_input_reset(void);
+void coef_input_resume(void);
 void coef_input_set_coef(uint8_t index, float value);
 float coef_input_get_coef(uint8_t index);
 coef_input_context_t* coef_input_get_context(void);
