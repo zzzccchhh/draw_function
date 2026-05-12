@@ -39,6 +39,7 @@ static uint8 long_press_triggered = 0;
 static uint8 debounce_count = 0;
 
 static matrix_key_callback user_callback = NULL;
+static uint8_t keyboard_enabled = 1;
 
 static matrix_key_info_struct key_info = {0};
 
@@ -132,6 +133,8 @@ static uint8 matrix_get_key_value(uint8 row, uint8 col, uint8 is_long_press)
 void matrix_keyboard_scanner(void)
 {
     uint8 key_position;
+
+    if(!keyboard_enabled) return;
 
     switch(current_state)
     {
@@ -295,6 +298,19 @@ void matrix_keyboard_init(uint32 scan_period_ms)
 void matrix_keyboard_set_callback(matrix_key_callback callback)
 {
     user_callback = callback;
+}
+
+void matrix_keyboard_set_enabled(uint8_t enabled)
+{
+    keyboard_enabled = enabled;
+    if(!enabled) {
+        current_state = MATRIX_IDLE;
+    }
+}
+
+uint8_t matrix_keyboard_is_enabled(void)
+{
+    return keyboard_enabled;
 }
 
 uint8 matrix_keyboard_get_value(void)

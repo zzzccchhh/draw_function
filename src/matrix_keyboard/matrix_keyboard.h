@@ -65,6 +65,10 @@ void matrix_keyboard_init(uint32 scan_period_ms);
 // 设置按键事件回调
 void matrix_keyboard_set_callback(matrix_key_callback callback);
 
+// 使能/禁止矩阵键盘
+void matrix_keyboard_set_enabled(uint8_t enabled);
+uint8_t matrix_keyboard_is_enabled(void);
+
 // 扫描函数（需在主循环或定时器中调用）
 void matrix_keyboard_scanner(void);
 

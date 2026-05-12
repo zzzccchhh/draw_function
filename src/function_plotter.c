@@ -22,25 +22,72 @@ const function_preset_t presets[] = {
 uint8_t current_index = 0;
 uint8_t preset_count = sizeof(presets) / sizeof(presets[0]);
 
-static float eval_function(float x, const function_preset_t *p)
+const char* function_get_name(function_type_t type)
 {
-    switch(p->type) {
+    switch(type) {
+        case FUNC_QUADRATIC:   return "Quadratic";
+        case FUNC_CUBIC:       return "Cubic";
+        case FUNC_EXPONENTIAL: return "Exponential";
+        case FUNC_LOGARITHM:   return "Logarithm";
+        case FUNC_SINE:        return "Sine";
+        case FUNC_COSINE:      return "Cosine";
+        case FUNC_TANGENT:     return "Tangent";
+        default:               return "Unknown";
+    }
+}
+
+const char* function_get_expression(function_type_t type)
+{
+    switch(type) {
+        case FUNC_QUADRATIC:   return "y=ax^2+bx+c";
+        case FUNC_CUBIC:       return "y=ax^3+bx^2+cx+d";
+        case FUNC_EXPONENTIAL: return "y=a*e^(bx)+c";
+        case FUNC_LOGARITHM:   return "y=a*ln(bx+c)+d";
+        case FUNC_SINE:        return "y=a*sin(bx+c)+d";
+        case FUNC_COSINE:      return "y=a*cos(bx+c)+d";
+        case FUNC_TANGENT:     return "y=a*tan(bx+c)+d";
+        default:               return "Unknown";
+    }
+}
+
+uint8_t function_get_coef_count(function_type_t type)
+{
+    switch(type) {
+        case FUNC_QUADRATIC:   return 3;
+        case FUNC_CUBIC:       return 4;
+        case FUNC_EXPONENTIAL: return 3;
+        case FUNC_LOGARITHM:   return 4;
+        case FUNC_SINE:        return 4;
+        case FUNC_COSINE:      return 4;
+        case FUNC_TANGENT:     return 4;
+        default:               return 0;
+    }
+}
+
+static float eval_function_custom(float x, function_type_t type, const float *coef)
+{
+    switch(type) {
         case FUNC_QUADRATIC:
-            return p->coef[0]*x*x + p->coef[1]*x + p->coef[2];
+            return coef[0]*x*x + coef[1]*x + coef[2];
         case FUNC_CUBIC:
-            return p->coef[0]*x*x*x + p->coef[1]*x*x + p->coef[2]*x + p->coef[3];
+            return coef[0]*x*x*x + coef[1]*x*x + coef[2]*x + coef[3];
         case FUNC_EXPONENTIAL:
-            return p->coef[0] * expf(p->coef[1] * x) + p->coef[2];
+            return coef[0] * expf(coef[1] * x) + coef[2];
         case FUNC_LOGARITHM:
-            return p->coef[0] * logf(p->coef[1] * x + p->coef[2]) + p->coef[3];
+            return coef[0] * logf(coef[1] * x + coef[2]) + coef[3];
         case FUNC_SINE:
-            return p->coef[0] * sinf(p->coef[1] * x + p->coef[2]) + p->coef[3];
+            return coef[0] * sinf(coef[1] * x + coef[2]) + coef[3];
         case FUNC_COSINE:
-            return p->coef[0] * cosf(p->coef[1] * x + p->coef[2]) + p->coef[3];
+            return coef[0] * cosf(coef[1] * x + coef[2]) + coef[3];
         case FUNC_TANGENT:
-            return p->coef[0] * tanf(p->coef[1] * x + p->coef[2]) + p->coef[3];
+            return coef[0] * tanf(coef[1] * x + coef[2]) + coef[3];
     }
     return 0;
+}
+
+static float eval_function(float x, const function_preset_t *p)
+{
+    return eval_function_custom(x, p->type, p->coef);
 }
 
 static void draw_line(int8_t x0, int8_t y0, int8_t x1, int8_t y1)
@@ -53,7 +100,6 @@ static void draw_line(int8_t x0, int8_t y0, int8_t x1, int8_t y1)
 
     while(1) {
         if(x0 >= 0 && x0 < 128 && y0 >= 0 && y0 < 64) {
-            // 文本保护区域：y < 8 不绘制曲线
             if(y0 >= 8) {
                 ssd1306_drawPixel(x0, y0, WHITE);
             }
@@ -65,15 +111,13 @@ static void draw_line(int8_t x0, int8_t y0, int8_t x1, int8_t y1)
     }
 }
 
-void function_plot(const function_preset_t *preset)
+void function_plot_custom(function_type_t type, const float *coef)
 {
     ssd1306_clearScreen();
 
-    // 1. 先绘制文本
     oled_setTextSize(1);
-    oled_drawText(0, 0, preset->name);
+    oled_drawText(0, 0, function_get_name(type));
 
-    // 2. 绘制坐标轴
     for(uint8_t x = 0; x < 128; x++) {
         ssd1306_drawPixel(x, 32, WHITE);
     }
@@ -81,7 +125,57 @@ void function_plot(const function_preset_t *preset)
         ssd1306_drawPixel(64, y, WHITE);
     }
 
-    // 3. 绘制函数曲线
+    int8_t prev_py = -1;
+
+    for(uint8_t px = 0; px < 128; px++) {
+        float math_x = (int8_t)(px - 64);
+
+        float y0 = eval_function_custom(math_x - 0.25f, type, coef);
+        float y1 = eval_function_custom(math_x, type, coef);
+        float y2 = eval_function_custom(math_x + 0.25f, type, coef);
+
+        float y = (y0 + y1 + y2) / 3.0f;
+
+        int16_t screen_y = 32 - (int16_t)(y);
+
+        if(screen_y < 8) {
+            prev_py = -1;
+            continue;
+        }
+
+        if(screen_y < 0 || screen_y > 63) {
+            prev_py = -1;
+            continue;
+        }
+
+        if(prev_py != -1) {
+            int8_t dy = screen_y - prev_py;
+            if(dy < -32 || dy > 32) {
+                prev_py = -1;
+            } else {
+                draw_line((int8_t)(px - 1), prev_py, (int8_t)px, screen_y);
+            }
+        }
+        prev_py = screen_y;
+    }
+
+    ssd1306_updateScreen();
+}
+
+void function_plot(const function_preset_t *preset)
+{
+    ssd1306_clearScreen();
+
+    oled_setTextSize(1);
+    oled_drawText(0, 0, preset->name);
+
+    for(uint8_t x = 0; x < 128; x++) {
+        ssd1306_drawPixel(x, 32, WHITE);
+    }
+    for(uint8_t y = 8; y < 64; y++) {
+        ssd1306_drawPixel(64, y, WHITE);
+    }
+
     int8_t prev_py = -1;
 
     for(uint8_t px = 0; px < 128; px++) {
@@ -95,13 +189,11 @@ void function_plot(const function_preset_t *preset)
 
         int16_t screen_y = 32 - (int16_t)(y);
 
-        // 顶部文本保护区域：y < 8 不绘制曲线
         if(screen_y < 8) {
             prev_py = -1;
             continue;
         }
 
-        // 如果超出屏幕范围，跳过该点（不绘制也不连线）
         if(screen_y < 0 || screen_y > 63) {
             prev_py = -1;
             continue;
