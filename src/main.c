@@ -94,7 +94,7 @@ void button_callback(button_event_t event)
     if(event == BUTTON_EVENT_SHORT_PRESS) {
         USART1_Printf("\r\n[Event] SHORT_PRESS, state=%d\r\n", state);
 
-        if(state == STATE_IDLE || state == STATE_DISPLAY) {
+        if(state == STATE_IDLE) {
             app_state_cycle_function();
             app_state_set_next(STATE_SELECT_FUNCTION);
             display_function_select();
@@ -114,7 +114,10 @@ void button_callback(button_event_t event)
             USART1_SendString("\r\nEntered coefficient input mode\r\n");
         } else if(state == STATE_INPUT_COEFFICIENTS) {
             // Long press to confirm - for future use
-        } else if(state == STATE_IDLE || state == STATE_DISPLAY) {
+        } else if(state == STATE_DISPLAY) {
+            app_state_set_next(STATE_SELECT_FUNCTION);
+            display_function_select();
+        } else if(state == STATE_IDLE) {
             coef_input_reset();
             coef_input_set_coef(0, 1.0f);
             app_state_set_next(STATE_INPUT_COEFFICIENTS);
