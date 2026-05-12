@@ -163,6 +163,8 @@ void coef_input_prev(void)
         uint8_t idx = coef_ctx.current_coef_index;
         if(coef_ctx.input_buffer[idx][0] != '\0') {
             coef_ctx.coef[idx] = atof(coef_ctx.input_buffer[idx]);
+        } else {
+            coef_ctx.coef[idx] = 0.0f;  // 默认为0
         }
         coef_ctx.current_coef_index--;
         coef_ctx.sign = 1;
@@ -182,6 +184,8 @@ void coef_input_next(void)
         uint8_t idx = coef_ctx.current_coef_index;
         if(coef_ctx.input_buffer[idx][0] != '\0') {
             coef_ctx.coef[idx] = atof(coef_ctx.input_buffer[idx]);
+        } else {
+            coef_ctx.coef[idx] = 0.0f;  // 默认为0
         }
         coef_ctx.current_coef_index++;
         coef_ctx.sign = 1;
@@ -203,47 +207,12 @@ void coef_input_confirm(void)
     USART1_Printf("idx=%d, buf=\"%s\", sign=%d\r\n", idx, coef_ctx.input_buffer[idx], coef_ctx.sign);
 
     if(coef_ctx.input_buffer[idx][0] != '\0') {
-        float value = 0.0f;
-        int neg = 0;
-        char *p = coef_ctx.input_buffer[idx];
-
-        if(*p == '-') {
-            neg = 1;
-            p++;
-        }
-
-        int int_part = 0;
-        int frac_part = 0;
-        int in_frac = 0;
-
-        while(*p) {
-            if(*p == '.') {
-                in_frac = 1;
-                p++;
-                continue;
-            }
-            if(*p >= '0' && *p <= '9') {
-                int digit = *p - '0';
-                if(in_frac) {
-                    frac_part = frac_part * 10 + digit;
-                } else {
-                    int_part = int_part * 10 + digit;
-                }
-            }
-            p++;
-        }
-
-        for(int i = 0; i < 2; i++) {
-            frac_part /= 10;
-        }
-
-        value = (float)int_part + (float)frac_part / 100.0f;
-        if(neg) value = -value;
-
+        float value = atof(coef_ctx.input_buffer[idx]);
         coef_ctx.coef[idx] = value;
         USART1_Printf("parsed: %.2f\r\n", (double)value);
     } else {
-        USART1_Printf("parsed: (empty)\r\n");
+        coef_ctx.coef[idx] = 0.0f;  // 默认为0
+        USART1_Printf("parsed: (empty) -> 0\r\n");
     }
 
     USART1_Printf("All: %.2f, %.2f, %.2f\r\n",
