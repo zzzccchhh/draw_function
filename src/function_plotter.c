@@ -74,14 +74,21 @@ static float eval_function_custom(float x, function_type_t type, const float *co
             return coef[0]*x*x*x + coef[1]*x*x + coef[2]*x + coef[3];
         case FUNC_EXPONENTIAL:
             return coef[0] * expf(coef[1] * x) + coef[2];
-        case FUNC_LOGARITHM:
-            return coef[0] * logf(coef[1] * x + coef[2]) + coef[3];
+        case FUNC_LOGARITHM: {
+            float arg = coef[1] * x + coef[2];
+            if(arg <= 0) return NAN;
+            return coef[0] * logf(arg) + coef[3];
+        }
         case FUNC_SINE:
             return coef[0] * sinf(coef[1] * x + coef[2]) + coef[3];
         case FUNC_COSINE:
             return coef[0] * cosf(coef[1] * x + coef[2]) + coef[3];
-        case FUNC_TANGENT:
-            return coef[0] * tanf(coef[1] * x + coef[2]) + coef[3];
+        case FUNC_TANGENT: {
+            float arg = coef[1] * x + coef[2];
+            float tan_val = tanf(arg);
+            if(isinf(tan_val)) return NAN;
+            return coef[0] * tan_val + coef[3];
+        }
     }
     return 0;
 }
@@ -128,7 +135,7 @@ void function_plot_custom(function_type_t type, const float *coef, uint8_t displ
     int8_t prev_py = -1;
 
     for(uint8_t px = 0; px < 128; px++) {
-        float math_x = (int8_t)(px - 64);
+        float math_x = ((int8_t)(px - 64)) / 3.0f;
 
         float y0 = eval_function_custom(math_x - 0.25f, type, coef);
         float y1 = eval_function_custom(math_x, type, coef);
@@ -136,9 +143,9 @@ void function_plot_custom(function_type_t type, const float *coef, uint8_t displ
 
         float y = (y0 + y1 + y2) / 3.0f;
 
-        int16_t screen_y = 32 - (int16_t)(y);
+        int16_t screen_y = 32 - (int16_t)(y / 2.0f);
 
-        if(screen_y < 8 || screen_y >= 56) {
+        if(isnan(y) || screen_y < 8 || screen_y >= 56) {
             prev_py = -1;
             continue;
         }
@@ -176,7 +183,7 @@ void function_plot(const function_preset_t *preset)
     int8_t prev_py = -1;
 
     for(uint8_t px = 0; px < 128; px++) {
-        float math_x = (int8_t)(px - 64);
+        float math_x = ((int8_t)(px - 64)) / 3.0f;
 
         float y0 = eval_function(math_x - 0.25f, preset);
         float y1 = eval_function(math_x, preset);
@@ -184,9 +191,9 @@ void function_plot(const function_preset_t *preset)
 
         float y = (y0 + y1 + y2) / 3.0f;
 
-        int16_t screen_y = 32 - (int16_t)(y);
+        int16_t screen_y = 32 - (int16_t)(y / 2.0f);
 
-        if(screen_y < 8 || screen_y >= 56) {
+        if(isnan(y) || screen_y < 8 || screen_y >= 56) {
             prev_py = -1;
             continue;
         }
