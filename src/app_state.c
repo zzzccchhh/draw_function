@@ -126,6 +126,7 @@ void coef_input_add_char(char c)
     if(coef_ctx.cursor_pos < 11) {
         coef_ctx.input_buffer[idx][coef_ctx.cursor_pos++] = c;
         coef_ctx.input_buffer[idx][coef_ctx.cursor_pos] = '\0';
+        USART1_Printf("\r\nadd_char: idx=%d, buffer=\"%s\"\r\n", idx, coef_ctx.input_buffer[idx]);
     }
 }
 
@@ -160,30 +161,38 @@ void coef_input_clear(void)
 void coef_input_prev(void)
 {
     if(coef_ctx.current_coef_index > 0) {
+        uint8_t idx = coef_ctx.current_coef_index;
+        if(coef_ctx.input_buffer[idx][0] != '\0') {
+            coef_ctx.coef[idx] = atof(coef_ctx.input_buffer[idx]);
+        }
         coef_ctx.current_coef_index--;
-        coef_ctx.cursor_pos = 0;
         coef_ctx.sign = 1;
         coef_ctx.has_decimal = 0;
-        uint8_t idx = coef_ctx.current_coef_index;
         coef_ctx.cursor_pos = 0;
-        while(coef_ctx.input_buffer[idx][coef_ctx.cursor_pos] != '\0') {
+        while(coef_ctx.input_buffer[coef_ctx.current_coef_index][coef_ctx.cursor_pos] != '\0') {
             coef_ctx.cursor_pos++;
         }
+        USART1_Printf("\r\ncoef_input_prev: now at index %d, buffer=\"%s\"\r\n",
+                      coef_ctx.current_coef_index, coef_ctx.input_buffer[coef_ctx.current_coef_index]);
     }
 }
 
 void coef_input_next(void)
 {
     if(coef_ctx.current_coef_index < coef_ctx.coef_count - 1) {
+        uint8_t idx = coef_ctx.current_coef_index;
+        if(coef_ctx.input_buffer[idx][0] != '\0') {
+            coef_ctx.coef[idx] = atof(coef_ctx.input_buffer[idx]);
+        }
         coef_ctx.current_coef_index++;
-        coef_ctx.cursor_pos = 0;
         coef_ctx.sign = 1;
         coef_ctx.has_decimal = 0;
-        uint8_t idx = coef_ctx.current_coef_index;
         coef_ctx.cursor_pos = 0;
-        while(coef_ctx.input_buffer[idx][coef_ctx.cursor_pos] != '\0') {
+        while(coef_ctx.input_buffer[coef_ctx.current_coef_index][coef_ctx.cursor_pos] != '\0') {
             coef_ctx.cursor_pos++;
         }
+        USART1_Printf("\r\ncoef_input_next: now at index %d, buffer=\"%s\"\r\n",
+                      coef_ctx.current_coef_index, coef_ctx.input_buffer[coef_ctx.current_coef_index]);
     }
 }
 
@@ -192,15 +201,29 @@ void coef_input_confirm(void)
     uint8_t idx = coef_ctx.current_coef_index;
     float value;
 
+    USART1_SendString("\r\n=== coef_input_confirm ===\r\n");
+    USART1_Printf("idx=%d, buf=\"%s\"\r\n", idx, coef_ctx.input_buffer[idx]);
+
     if(coef_ctx.input_buffer[idx][0] != '\0') {
         value = atof(coef_ctx.input_buffer[idx]);
         coef_ctx.coef[idx] = value;
     }
 
+    USART1_Printf("parsed: %.2f\r\n", (double)value);
+    USART1_Printf("All: %.2f, %.2f, %.2f\r\n",
+                  (double)coef_ctx.coef[0],
+                  (double)coef_ctx.coef[1],
+                  (double)coef_ctx.coef[2]);
+
     coef_ctx.sign = 1;
     coef_ctx.has_decimal = 0;
 
     app_state_set_next(STATE_DISPLAY);
+
+    char expr_buf[64];
+    function_format_expression(expr_buf, coef_ctx.func_type, coef_ctx.coef);
+    USART1_Printf("\r\nExpression: %s\r\n", expr_buf);
+
     function_plot_custom(coef_ctx.func_type, coef_ctx.coef);
     USART1_SendString("\r\nConfirmed coefficients - displaying graph\r\n");
 }

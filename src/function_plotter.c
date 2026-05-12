@@ -3,6 +3,7 @@
 #include "oled_hal.h"
 #include "uart1.h"
 #include <math.h>
+#include <stdio.h>
 
 const function_preset_t presets[] = {
     {FUNC_QUADRATIC,   "y=x^2/50",          {0.02f,  0.0f,   0.0f,  0.0f}},
@@ -90,6 +91,7 @@ static float eval_function(float x, const function_preset_t *p)
     return eval_function_custom(x, p->type, p->coef);
 }
 
+static void draw_coefficients(function_type_t type, const float *coef);
 static void draw_line(int8_t x0, int8_t y0, int8_t x1, int8_t y1)
 {
     int8_t dx = (x0 < x1) ? (x1 - x0) : (x0 - x1);
@@ -99,10 +101,8 @@ static void draw_line(int8_t x0, int8_t y0, int8_t x1, int8_t y1)
     int8_t err = dx - dy;
 
     while(1) {
-        if(x0 >= 0 && x0 < 128 && y0 >= 0 && y0 < 64) {
-            if(y0 >= 8) {
-                ssd1306_drawPixel(x0, y0, WHITE);
-            }
+        if(x0 >= 0 && x0 < 128 && y0 >= 8 && y0 < 56) {
+            ssd1306_drawPixel(x0, y0, WHITE);
         }
         if(x0 == x1 && y0 == y1) break;
         int8_t e2 = err * 2;
@@ -138,12 +138,7 @@ void function_plot_custom(function_type_t type, const float *coef)
 
         int16_t screen_y = 32 - (int16_t)(y);
 
-        if(screen_y < 8) {
-            prev_py = -1;
-            continue;
-        }
-
-        if(screen_y < 0 || screen_y > 63) {
+        if(screen_y < 8 || screen_y >= 56) {
             prev_py = -1;
             continue;
         }
@@ -159,6 +154,8 @@ void function_plot_custom(function_type_t type, const float *coef)
         prev_py = screen_y;
     }
 
+    ssd1306_updateScreen();
+    draw_coefficients(type, coef);
     ssd1306_updateScreen();
 }
 
@@ -189,12 +186,7 @@ void function_plot(const function_preset_t *preset)
 
         int16_t screen_y = 32 - (int16_t)(y);
 
-        if(screen_y < 8) {
-            prev_py = -1;
-            continue;
-        }
-
-        if(screen_y < 0 || screen_y > 63) {
+        if(screen_y < 8 || screen_y >= 56) {
             prev_py = -1;
             continue;
         }
@@ -211,6 +203,54 @@ void function_plot(const function_preset_t *preset)
     }
 
     ssd1306_updateScreen();
+}
+
+static void draw_coefficients(function_type_t type, const float *coef)
+{
+    uint8_t count = function_get_coef_count(type);
+    const char *names = "abcd";
+
+    for(uint8_t x = 0; x < 128; x++) {
+        for(uint8_t y = 56; y < 64; y++) {
+            ssd1306_drawPixel(x, y, BLACK);
+        }
+    }
+    oled_setTextSize(1);
+
+    uint8_t x_pos = 0;
+    for(uint8_t i = 0; i < count && x_pos < 110; i++) {
+        if(i > 0) {
+            oled_drawChar(x_pos, 56, ',', WHITE, BLACK, 1);
+            x_pos += 6;
+        }
+        oled_drawChar(x_pos, 56, names[i], WHITE, BLACK, 1);
+        x_pos += 6;
+        oled_drawChar(x_pos, 56, '=', WHITE, BLACK, 1);
+        x_pos += 6;
+
+        float val = coef[i];
+        int32_t int_part = (int32_t)val;
+        int32_t frac_part = (int32_t)((val < 0 ? -val : val - int_part) * 100);
+
+        if(val < 0) {
+            oled_drawChar(x_pos, 56, '-', WHITE, BLACK, 1);
+            x_pos += 6;
+            int_part = -int_part;
+        }
+
+        if(int_part >= 10) {
+            oled_drawChar(x_pos, 56, '0' + (int_part / 10), WHITE, BLACK, 1);
+            x_pos += 6;
+        }
+        oled_drawChar(x_pos, 56, '0' + (int_part % 10), WHITE, BLACK, 1);
+        x_pos += 6;
+        oled_drawChar(x_pos, 56, '.', WHITE, BLACK, 1);
+        x_pos += 6;
+        oled_drawChar(x_pos, 56, '0' + (frac_part / 10), WHITE, BLACK, 1);
+        x_pos += 6;
+        oled_drawChar(x_pos, 56, '0' + (frac_part % 10), WHITE, BLACK, 1);
+        x_pos += 6;
+    }
 }
 
 static void float_to_str(char *buf, float val)
@@ -236,6 +276,33 @@ static void float_to_str(char *buf, float val)
     *buf++ = '0' + ((frac_part / 10) % 10);
     *buf++ = '0' + (frac_part % 10);
     *buf = '\0';
+}
+
+void function_format_expression(char *buf, function_type_t type, const float *coef)
+{
+    switch(type) {
+        case FUNC_QUADRATIC:
+            sprintf(buf, "y=%.2fx^2+%.2fx+%.2f", coef[0], coef[1], coef[2]);
+            break;
+        case FUNC_CUBIC:
+            sprintf(buf, "y=%.2fx^3+%.2fx^2+%.2fx+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            break;
+        case FUNC_EXPONENTIAL:
+            sprintf(buf, "y=%.2f*e^(%.2fx)+%.2f", coef[0], coef[1], coef[2]);
+            break;
+        case FUNC_LOGARITHM:
+            sprintf(buf, "y=%.2f*ln(%.2fx+%.2f)+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            break;
+        case FUNC_SINE:
+            sprintf(buf, "y=%.2f*sin(%.2fx+%.2f)+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            break;
+        case FUNC_COSINE:
+            sprintf(buf, "y=%.2f*cos(%.2fx+%.2f)+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            break;
+        case FUNC_TANGENT:
+            sprintf(buf, "y=%.2f*tan(%.2fx+%.2f)+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            break;
+    }
 }
 
 void function_send_to_uart(const function_preset_t *preset)

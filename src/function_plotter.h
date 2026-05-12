@@ -29,5 +29,6 @@ void function_send_to_uart(const function_preset_t *preset);
 const char* function_get_name(function_type_t type);
 const char* function_get_expression(function_type_t type);
 uint8_t function_get_coef_count(function_type_t type);
+void function_format_expression(char *buf, function_type_t type, const float *coef);
 
 #endif
