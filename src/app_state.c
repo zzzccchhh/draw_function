@@ -146,6 +146,9 @@ void coef_input_toggle_sign(void)
         coef_ctx.input_buffer[idx][0] = '-';
         coef_ctx.input_buffer[idx][++coef_ctx.cursor_pos] = '\0';
     }
+
+    USART1_Printf("\r\ntoggle_sign: idx=%d, sign=%d, buffer=\"%s\"\r\n",
+                  idx, coef_ctx.sign, coef_ctx.input_buffer[idx]);
 }
 
 void coef_input_clear(void)

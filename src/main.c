@@ -31,6 +31,7 @@ void display_graph(void);
 int main(void)
 {
     clock_init(SYSTEM_CLOCK_144M);
+    system_delay_ms(50);  // 等待时钟稳定
 
     USART1_Init();
     USART1_SendString("\r\n=== Function Plotter Started ===\r\n");
