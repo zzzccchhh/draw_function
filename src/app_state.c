@@ -199,17 +199,54 @@ void coef_input_next(void)
 void coef_input_confirm(void)
 {
     uint8_t idx = coef_ctx.current_coef_index;
-    float value;
 
     USART1_SendString("\r\n=== coef_input_confirm ===\r\n");
-    USART1_Printf("idx=%d, buf=\"%s\"\r\n", idx, coef_ctx.input_buffer[idx]);
+    USART1_Printf("idx=%d, buf=\"%s\", sign=%d\r\n", idx, coef_ctx.input_buffer[idx], coef_ctx.sign);
 
     if(coef_ctx.input_buffer[idx][0] != '\0') {
-        value = atof(coef_ctx.input_buffer[idx]);
+        float value = 0.0f;
+        int neg = 0;
+        char *p = coef_ctx.input_buffer[idx];
+
+        if(*p == '-') {
+            neg = 1;
+            p++;
+        }
+
+        int int_part = 0;
+        int frac_part = 0;
+        int in_frac = 0;
+
+        while(*p) {
+            if(*p == '.') {
+                in_frac = 1;
+                p++;
+                continue;
+            }
+            if(*p >= '0' && *p <= '9') {
+                int digit = *p - '0';
+                if(in_frac) {
+                    frac_part = frac_part * 10 + digit;
+                } else {
+                    int_part = int_part * 10 + digit;
+                }
+            }
+            p++;
+        }
+
+        for(int i = 0; i < 2; i++) {
+            frac_part /= 10;
+        }
+
+        value = (float)int_part + (float)frac_part / 100.0f;
+        if(neg) value = -value;
+
         coef_ctx.coef[idx] = value;
+        USART1_Printf("parsed: %.2f\r\n", (double)value);
+    } else {
+        USART1_Printf("parsed: (empty)\r\n");
     }
 
-    USART1_Printf("parsed: %.2f\r\n", (double)value);
     USART1_Printf("All: %.2f, %.2f, %.2f\r\n",
                   (double)coef_ctx.coef[0],
                   (double)coef_ctx.coef[1],

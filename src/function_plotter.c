@@ -278,31 +278,102 @@ static void float_to_str(char *buf, float val)
     *buf = '\0';
 }
 
+static void format_float(char **dest, float val)
+{
+    char *buf = *dest;
+    int neg = 0;
+
+    if(val < 0) {
+        neg = 1;
+        val = -val;
+    }
+
+    int int_part = (int)val;
+    int frac_part = (int)((val - int_part) * 100);
+
+    if(neg) *buf++ = '-';
+
+    if(int_part >= 10) {
+        *buf++ = '0' + (int_part / 10);
+    }
+    *buf++ = '0' + (int_part % 10);
+
+    *buf++ = '.';
+    *buf++ = '0' + (frac_part / 10);
+    *buf++ = '0' + (frac_part % 10);
+
+    *dest = buf;
+}
+
 void function_format_expression(char *buf, function_type_t type, const float *coef)
 {
+    char *p = buf;
+
+    *p++ = 'y';
+    *p++ = '=';
+
     switch(type) {
         case FUNC_QUADRATIC:
-            sprintf(buf, "y=%.2fx^2+%.2fx+%.2f", coef[0], coef[1], coef[2]);
+            format_float(&p, coef[0]);
+            *p++ = 'x'; *p++ = '^'; *p++ = '2'; *p++ = '+';
+            format_float(&p, coef[1]);
+            *p++ = 'x'; *p++ = '+';
+            format_float(&p, coef[2]);
             break;
         case FUNC_CUBIC:
-            sprintf(buf, "y=%.2fx^3+%.2fx^2+%.2fx+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            format_float(&p, coef[0]);
+            *p++ = 'x'; *p++ = '^'; *p++ = '3'; *p++ = '+';
+            format_float(&p, coef[1]);
+            *p++ = 'x'; *p++ = '^'; *p++ = '2'; *p++ = '+';
+            format_float(&p, coef[2]);
+            *p++ = 'x'; *p++ = '+';
+            format_float(&p, coef[3]);
             break;
         case FUNC_EXPONENTIAL:
-            sprintf(buf, "y=%.2f*e^(%.2fx)+%.2f", coef[0], coef[1], coef[2]);
+            format_float(&p, coef[0]);
+            *p++ = '*'; *p++ = 'e'; *p++ = '^'; *p++ = '(';
+            format_float(&p, coef[1]);
+            *p++ = 'x'; *p++ = ')'; *p++ = '+';
+            format_float(&p, coef[2]);
             break;
         case FUNC_LOGARITHM:
-            sprintf(buf, "y=%.2f*ln(%.2fx+%.2f)+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            format_float(&p, coef[0]);
+            *p++ = '*'; *p++ = 'l'; *p++ = 'n'; *p++ = '(';
+            format_float(&p, coef[1]);
+            *p++ = 'x'; *p++ = '+';
+            format_float(&p, coef[2]);
+            *p++ = ')'; *p++ = '+';
+            format_float(&p, coef[3]);
             break;
         case FUNC_SINE:
-            sprintf(buf, "y=%.2f*sin(%.2fx+%.2f)+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            format_float(&p, coef[0]);
+            *p++ = '*'; *p++ = 's'; *p++ = 'i'; *p++ = 'n'; *p++ = '(';
+            format_float(&p, coef[1]);
+            *p++ = 'x'; *p++ = '+';
+            format_float(&p, coef[2]);
+            *p++ = ')'; *p++ = '+';
+            format_float(&p, coef[3]);
             break;
         case FUNC_COSINE:
-            sprintf(buf, "y=%.2f*cos(%.2fx+%.2f)+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            format_float(&p, coef[0]);
+            *p++ = '*'; *p++ = 'c'; *p++ = 'o'; *p++ = 's'; *p++ = '(';
+            format_float(&p, coef[1]);
+            *p++ = 'x'; *p++ = '+';
+            format_float(&p, coef[2]);
+            *p++ = ')'; *p++ = '+';
+            format_float(&p, coef[3]);
             break;
         case FUNC_TANGENT:
-            sprintf(buf, "y=%.2f*tan(%.2fx+%.2f)+%.2f", coef[0], coef[1], coef[2], coef[3]);
+            format_float(&p, coef[0]);
+            *p++ = '*'; *p++ = 't'; *p++ = 'a'; *p++ = 'n'; *p++ = '(';
+            format_float(&p, coef[1]);
+            *p++ = 'x'; *p++ = '+';
+            format_float(&p, coef[2]);
+            *p++ = ')'; *p++ = '+';
+            format_float(&p, coef[3]);
             break;
     }
+    *p = '\0';
 }
 
 void function_send_to_uart(const function_preset_t *preset)
