@@ -1,6 +1,4 @@
 #include "matrix_keyboard.h"
-#include "oled_ssd1306.h"
-#include "oled_hal.h"
 #include <stdio.h>
 
 //=================================================== 宏定义 ===================================================
@@ -122,7 +120,7 @@ static uint8 matrix_get_key_value(uint8 row, uint8 col, uint8 is_long_press)
 
     if(is_long_press)
     {
-        return 'A' + index - 1;
+        return 'A' + (index >> 2);  // 4->'A', 8->'B', 12->'C', 16->'D'
     }
 
     return index;
@@ -198,8 +196,6 @@ void matrix_keyboard_scanner(void)
                     key_value = matrix_get_key_value(current_row, current_col, 1);
                     current_state = MATRIX_LONG_PRESS;
 
-                    matrix_keyboard_display_info(key_value);
-
                     if(user_callback)
                     {
                         user_callback(current_key_index, MATRIX_EVENT_LONG_PRESS, key_value);
@@ -211,7 +207,6 @@ void matrix_keyboard_scanner(void)
                 if(!long_press_triggered)
                 {
                     key_value = current_key_index;
-                    matrix_keyboard_display_info(key_value);
                 }
 
                 if(user_callback)
@@ -349,47 +344,3 @@ matrix_key_info_struct matrix_keyboard_get_info(void)
     return info;
 }
 
-//-------------------------------------------------------------------------------------------------------------------
-// 函数名称     在OLED上显示按键信息
-//-------------------------------------------------------------------------------------------------------------------
-void matrix_keyboard_display_info(uint8 key_value)
-{
-    ssd1306_clearScreen();
-    oled_setTextColor(WHITE, BLACK);
-
-    if(key_value >= 'A' && key_value <= 'P')
-    {
-        // 长按：显示字母
-        oled_setTextSize(2);
-        oled_drawText(0, 0, "P:");
-        oled_drawChar(20, 0, key_value, WHITE, BLACK, 2);
-        oled_drawText(64, 0, "C:");
-        oled_drawChar(84, 0, key_value, WHITE, BLACK, 2);
-    }
-    else if(key_value >= 1 && key_value <= 16)
-    {
-        // 短按：显示数字
-        oled_setTextSize(2);
-        oled_drawText(0, 0, "P:");
-        oled_displayInt(20, 0, key_value);
-        oled_drawText(64, 0, "C:");
-        oled_displayInt(84, 0, key_value);
-    }
-    else
-    {
-        oled_setTextSize(2);
-        oled_drawText(40, 20, "No Key");
-        ssd1306_updateScreen();
-        return;
-    }
-
-    // 显示键位映射表
-    oled_setTextSize(1);
-    oled_drawText(0, 30, "1 2 3 4");
-    oled_drawText(0, 42, "5 6 7 8");
-    oled_drawText(64, 30, "9 10 11 12");
-    oled_drawText(64, 42, "13 14 15 16");
-    oled_drawText(0, 54, "Long: A-P");
-
-    ssd1306_updateScreen();
-}
