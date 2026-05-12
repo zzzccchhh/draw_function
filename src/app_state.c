@@ -90,7 +90,6 @@ void coef_input_reset(void)
     coef_ctx.sign = 1;
     coef_ctx.has_decimal = 0;
     for(uint8_t i = 0; i < 4; i++) {
-        coef_ctx.coef[i] = 0.0f;
         coef_ctx.input_buffer[i][0] = '\0';
     }
 }
