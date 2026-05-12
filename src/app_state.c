@@ -254,6 +254,7 @@ void coef_input_confirm(void)
 
     coef_ctx.sign = 1;
     coef_ctx.has_decimal = 0;
+    coef_ctx.display_page = 0;
 
     app_state_set_next(STATE_DISPLAY);
 
@@ -261,7 +262,7 @@ void coef_input_confirm(void)
     function_format_expression(expr_buf, coef_ctx.func_type, coef_ctx.coef);
     USART1_Printf("\r\nExpression: %s\r\n", expr_buf);
 
-    function_plot_custom(coef_ctx.func_type, coef_ctx.coef);
+    function_plot_custom(coef_ctx.func_type, coef_ctx.coef, coef_ctx.display_page);
     USART1_SendString("\r\nConfirmed coefficients - displaying graph\r\n");
 }
 
@@ -275,4 +276,9 @@ void coef_input_add_decimal(void)
             coef_ctx.has_decimal = 1;
         }
     }
+}
+
+void coef_input_toggle_display_page(void)
+{
+    coef_ctx.display_page = !coef_ctx.display_page;
 }

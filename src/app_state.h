@@ -20,6 +20,7 @@ typedef struct {
     uint8_t cursor_pos;
     int8_t sign;
     uint8_t has_decimal;
+    uint8_t display_page;
 } coef_input_context_t;
 
 void app_state_init(void);
@@ -40,5 +41,6 @@ void coef_input_prev(void);
 void coef_input_next(void);
 void coef_input_confirm(void);
 void coef_input_add_decimal(void);
+void coef_input_toggle_display_page(void);
 
 #endif

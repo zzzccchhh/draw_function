@@ -24,7 +24,7 @@ extern uint8_t current_index;
 extern uint8_t preset_count;
 
 void function_plot(const function_preset_t *preset);
-void function_plot_custom(function_type_t type, const float *coef);
+void function_plot_custom(function_type_t type, const float *coef, uint8_t display_page);
 void function_send_to_uart(const function_preset_t *preset);
 const char* function_get_name(function_type_t type);
 const char* function_get_expression(function_type_t type);

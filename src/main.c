@@ -19,6 +19,7 @@ volatile uint32_t system_ms = 0;
 static volatile uint32_t last_input_time = 0;
 static volatile uint8_t cursor_blink_state = 0;
 static volatile uint32_t cursor_blink_timer = 0;
+static volatile uint32_t coef_display_timer = 0;
 
 void button_callback(button_event_t event);
 void matrix_keyboard_callback(uint8 key_index, matrix_key_event_enum event, uint8 key_value);
@@ -70,9 +71,17 @@ int main(void)
 
             uint32_t current_time = last_input_time + 50;
             if(last_input_time > 0 && (current_time - last_input_time) > COEF_INPUT_TIMEOUT_MS) {
+                coef_input_get_context()->display_page = 0;
                 app_state_set_next(STATE_DISPLAY);
-                function_plot_custom(coef_input_get_context()->func_type, coef_input_get_context()->coef);
+                function_plot_custom(coef_input_get_context()->func_type, coef_input_get_context()->coef, coef_input_get_context()->display_page);
                 USART1_SendString("\r\nTimeout - displaying graph\r\n");
+            }
+        } else if(app_state_get_current() == STATE_DISPLAY) {
+            coef_display_timer++;
+            if(coef_display_timer >= 10000) {
+                coef_display_timer = 0;
+                coef_input_toggle_display_page();
+                function_plot_custom(coef_input_get_context()->func_type, coef_input_get_context()->coef, coef_input_get_context()->display_page);
             }
         }
     }
@@ -226,7 +235,7 @@ void display_coef_input(void)
 void display_graph(void)
 {
     coef_input_context_t *ctx = coef_input_get_context();
-    function_plot_custom(ctx->func_type, ctx->coef);
+    function_plot_custom(ctx->func_type, ctx->coef, ctx->display_page);
 
     char buf[64];
     snprintf(buf, sizeof(buf), "%s: a=%.2f", app_state_get_func_name(ctx->func_type), ctx->coef[0]);
