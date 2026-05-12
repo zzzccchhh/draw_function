@@ -1,4 +1,5 @@
 #include "app_state.h"
+#include <stdlib.h>
 
 static app_state_t current_state = STATE_IDLE;
 static coef_input_context_t coef_ctx;
@@ -112,4 +113,106 @@ float coef_input_get_coef(uint8_t index)
 coef_input_context_t* coef_input_get_context(void)
 {
     return &coef_ctx;
+}
+
+void coef_input_add_char(char c)
+{
+    if(c == '-' || c == '+') {
+        coef_ctx.sign = (c == '-') ? -1 : 1;
+        return;
+    }
+
+    uint8_t idx = coef_ctx.current_coef_index;
+    if(coef_ctx.cursor_pos < 11) {
+        coef_ctx.input_buffer[idx][coef_ctx.cursor_pos++] = c;
+        coef_ctx.input_buffer[idx][coef_ctx.cursor_pos] = '\0';
+    }
+}
+
+void coef_input_toggle_sign(void)
+{
+    uint8_t idx = coef_ctx.current_coef_index;
+    coef_ctx.sign *= -1;
+
+    if(coef_ctx.input_buffer[idx][0] == '-') {
+        for(int i = 0; coef_ctx.input_buffer[idx][i] != '\0'; i++) {
+            coef_ctx.input_buffer[idx][i] = coef_ctx.input_buffer[idx][i+1];
+        }
+        if(coef_ctx.cursor_pos > 0) coef_ctx.cursor_pos--;
+    } else if(coef_ctx.input_buffer[idx][0] != '\0') {
+        for(int i = 10; i > 0; i--) {
+            coef_ctx.input_buffer[idx][i] = coef_ctx.input_buffer[idx][i-1];
+        }
+        coef_ctx.input_buffer[idx][0] = '-';
+        coef_ctx.input_buffer[idx][++coef_ctx.cursor_pos] = '\0';
+    }
+}
+
+void coef_input_clear(void)
+{
+    uint8_t idx = coef_ctx.current_coef_index;
+    coef_ctx.input_buffer[idx][0] = '\0';
+    coef_ctx.cursor_pos = 0;
+    coef_ctx.sign = 1;
+    coef_ctx.has_decimal = 0;
+}
+
+void coef_input_prev(void)
+{
+    if(coef_ctx.current_coef_index > 0) {
+        coef_ctx.current_coef_index--;
+        coef_ctx.cursor_pos = 0;
+        coef_ctx.sign = 1;
+        coef_ctx.has_decimal = 0;
+        uint8_t idx = coef_ctx.current_coef_index;
+        coef_ctx.cursor_pos = 0;
+        while(coef_ctx.input_buffer[idx][coef_ctx.cursor_pos] != '\0') {
+            coef_ctx.cursor_pos++;
+        }
+    }
+}
+
+void coef_input_next(void)
+{
+    if(coef_ctx.current_coef_index < coef_ctx.coef_count - 1) {
+        coef_ctx.current_coef_index++;
+        coef_ctx.cursor_pos = 0;
+        coef_ctx.sign = 1;
+        coef_ctx.has_decimal = 0;
+        uint8_t idx = coef_ctx.current_coef_index;
+        coef_ctx.cursor_pos = 0;
+        while(coef_ctx.input_buffer[idx][coef_ctx.cursor_pos] != '\0') {
+            coef_ctx.cursor_pos++;
+        }
+    }
+}
+
+void coef_input_confirm(void)
+{
+    uint8_t idx = coef_ctx.current_coef_index;
+    float value;
+
+    if(coef_ctx.input_buffer[idx][0] != '\0') {
+        value = atof(coef_ctx.input_buffer[idx]);
+        coef_ctx.coef[idx] = value;
+    }
+
+    coef_ctx.sign = 1;
+    coef_ctx.has_decimal = 0;
+
+    app_state_set_next(STATE_DISPLAY);
+    function_plot_custom(coef_ctx.func_type, coef_ctx.coef);
+    USART1_SendString("\r\nConfirmed coefficients - displaying graph\r\n");
+}
+
+void coef_input_add_decimal(void)
+{
+    if(!coef_ctx.has_decimal) {
+        uint8_t idx = coef_ctx.current_coef_index;
+        if(coef_ctx.cursor_pos < 11) {
+            coef_ctx.input_buffer[idx][coef_ctx.cursor_pos++] = '.';
+            coef_ctx.input_buffer[idx][coef_ctx.cursor_pos] = '\0';
+            coef_ctx.has_decimal = 1;
+        }
+    }
 }

@@ -116,7 +116,7 @@ void function_plot_custom(function_type_t type, const float *coef)
     ssd1306_clearScreen();
 
     oled_setTextSize(1);
-    oled_drawText(0, 0, function_get_name(type));
+    oled_drawText(0, 0, function_get_expression(type));
 
     for(uint8_t x = 0; x < 128; x++) {
         ssd1306_drawPixel(x, 32, WHITE);

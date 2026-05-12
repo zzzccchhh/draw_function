@@ -21,6 +21,7 @@ static volatile uint8_t cursor_blink_state = 0;
 static volatile uint32_t cursor_blink_timer = 0;
 
 void button_callback(button_event_t event);
+void matrix_keyboard_callback(uint8 key_index, matrix_key_event_enum event, uint8 key_value);
 void update_display(void);
 void display_function_select(void);
 void display_coef_input(void);
@@ -48,6 +49,8 @@ int main(void)
     timer_start(TIM_6);
 
     app_state_init();
+    matrix_keyboard_init(MATRIX_SCAN_PERIOD);
+    matrix_keyboard_set_callback(matrix_keyboard_callback);
     display_function_select();
 
     last_input_time = 0;
@@ -55,6 +58,7 @@ int main(void)
     while(1) {
         system_ms = timer_get(TIM_6);
         button_is_pressed();
+        matrix_keyboard_scanner();
 
         if(app_state_get_current() == STATE_INPUT_COEFFICIENTS) {
             cursor_blink_timer++;
@@ -109,6 +113,37 @@ void button_callback(button_event_t event)
             update_display();
         }
     }
+}
+
+void matrix_keyboard_callback(uint8 key_index, matrix_key_event_enum event, uint8 key_value)
+{
+    if(event != MATRIX_EVENT_SHORT_PRESS) return;
+
+    app_state_t state = app_state_get_current();
+    if(state != STATE_INPUT_COEFFICIENTS) return;
+
+    last_input_time = timer_get(TIM_6);
+
+    switch(key_index) {
+        case 1: coef_input_add_char('1'); break;
+        case 2: coef_input_add_char('2'); break;
+        case 3: coef_input_add_char('3'); break;
+        case 4: coef_input_toggle_sign(); break;
+        case 5: coef_input_add_char('4'); break;
+        case 6: coef_input_add_char('5'); break;
+        case 7: coef_input_add_char('6'); break;
+        case 8: coef_input_prev(); break;
+        case 9: coef_input_add_char('7'); break;
+        case 10: coef_input_add_char('8'); break;
+        case 11: coef_input_add_char('9'); break;
+        case 12: coef_input_next(); break;
+        case 13: coef_input_clear(); break;
+        case 14: coef_input_add_char('0'); break;
+        case 15: coef_input_add_decimal(); break;
+        case 16: coef_input_confirm(); break;
+    }
+
+    update_display();
 }
 
 void update_display(void)
@@ -170,7 +205,7 @@ void display_coef_input(void)
             snprintf(val_buf, sizeof(val_buf), "%.2f", ctx->coef[i]);
         }
 
-        // 格式化系数行
+        // 格式化系数行 (显示当前输入缓冲区内容)
         snprintf(line_buf, sizeof(line_buf), "%c=%s", coef_names[i], val_buf);
 
         // 当前系数前加 > 指示符

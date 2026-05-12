@@ -33,5 +33,12 @@ void coef_input_reset(void);
 void coef_input_set_coef(uint8_t index, float value);
 float coef_input_get_coef(uint8_t index);
 coef_input_context_t* coef_input_get_context(void);
+void coef_input_add_char(char c);
+void coef_input_toggle_sign(void);
+void coef_input_clear(void);
+void coef_input_prev(void);
+void coef_input_next(void);
+void coef_input_confirm(void);
+void coef_input_add_decimal(void);
 
 #endif
