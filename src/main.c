@@ -101,6 +101,12 @@ void button_callback(button_event_t event)
         } else if(state == STATE_SELECT_FUNCTION) {
             app_state_cycle_function();
             display_function_select();
+        } else if(state == STATE_DISPLAY) {
+            coef_input_reset();
+            app_state_set_next(STATE_INPUT_COEFFICIENTS);
+            last_input_time = 0;
+            update_display();
+            USART1_SendString("\r\nRe-enter coefficient input mode\r\n");
         }
     }
     else if(event == BUTTON_EVENT_LONG_PRESS_START) {
