@@ -2,7 +2,6 @@
  * ch32v307 function plotter with matrix keyboard
  * Matrix keyboard for coefficient input, PE8 for function selection
  */
-//12344
 #include "zf_common_headfile.h"
 #include "oled_ssd1306.h"
 #include "oled_hal.h"
