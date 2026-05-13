@@ -174,9 +174,9 @@ void coef_input_prev(void)
     if(coef_ctx.current_coef_index > 0) {
         uint8_t idx = coef_ctx.current_coef_index;
         if(coef_ctx.input_buffer[idx][0] != '\0') {
-            coef_ctx.coef[idx] = atof(coef_ctx.input_buffer[idx]);
+            coef_ctx.coef[idx] = atof(coef_ctx.input_buffer[idx]) * coef_ctx.sign;
         } else {
-            coef_ctx.coef[idx] = 0.0f;  // 默认为0
+            coef_ctx.coef[idx] = 0.0f;
         }
         coef_ctx.current_coef_index--;
         coef_ctx.sign = 1;
@@ -195,9 +195,9 @@ void coef_input_next(void)
     if(coef_ctx.current_coef_index < coef_ctx.coef_count - 1) {
         uint8_t idx = coef_ctx.current_coef_index;
         if(coef_ctx.input_buffer[idx][0] != '\0') {
-            coef_ctx.coef[idx] = atof(coef_ctx.input_buffer[idx]);
+            coef_ctx.coef[idx] = atof(coef_ctx.input_buffer[idx]) * coef_ctx.sign;
         } else {
-            coef_ctx.coef[idx] = 0.0f;  // 默认为0
+            coef_ctx.coef[idx] = 0.0f;
         }
         coef_ctx.current_coef_index++;
         coef_ctx.sign = 1;
@@ -215,22 +215,11 @@ void coef_input_confirm(void)
 {
     uint8_t idx = coef_ctx.current_coef_index;
 
-    USART1_SendString("\r\n=== coef_input_confirm ===\r\n");
-    USART1_Printf("idx=%d, buf=\"%s\", sign=%d\r\n", idx, coef_ctx.input_buffer[idx], coef_ctx.sign);
-
     if(coef_ctx.input_buffer[idx][0] != '\0') {
-        float value = atof(coef_ctx.input_buffer[idx]);
-        coef_ctx.coef[idx] = value;
-        USART1_Printf("parsed: %.2f\r\n", (double)value);
+        coef_ctx.coef[idx] = atof(coef_ctx.input_buffer[idx]) * coef_ctx.sign;
     } else {
-        coef_ctx.coef[idx] = 0.0f;  // 默认为0
-        USART1_Printf("parsed: (empty) -> 0\r\n");
+        coef_ctx.coef[idx] = 0.0f;
     }
-
-    USART1_Printf("All: %.2f, %.2f, %.2f\r\n",
-                  (double)coef_ctx.coef[0],
-                  (double)coef_ctx.coef[1],
-                  (double)coef_ctx.coef[2]);
 
     coef_ctx.sign = 1;
     coef_ctx.has_decimal = 0;
